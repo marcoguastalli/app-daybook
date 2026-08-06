@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTopicFile } from "../../src/server/core/parser";
@@ -168,6 +168,9 @@ describe("atomicWriteFile", () => {
       await atomicWriteFile(path, "# T\n\n## 2026-01-01\n\n### 10:00\n\nx\n");
       expect(await Bun.file(path).text()).toContain("### 10:00");
       expect(await readdir(dir)).toEqual(["topic.md"]);
+      // group-writable so a human can still edit the file by hand on Linux,
+      // where the container's ownership passes through the bind mount
+      expect((await stat(path)).mode & 0o777).toBe(0o664);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

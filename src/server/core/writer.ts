@@ -1,13 +1,23 @@
-import { rename } from "node:fs/promises";
+import { chmod, rename } from "node:fs/promises";
 import { FENCE_RE, type ParsedTopic } from "./parser";
 
 export class EntryNotFoundError extends Error {}
+
+/** Topic files are meant to be edited outside the app too (vim, VS Code).
+ *  The app writes them as a non-root container user, so on Linux — where
+ *  bind mounts pass ownership straight through — a default 0644 would leave
+ *  them read-only for the human editing by hand. Group-writable keeps both
+ *  writers working when the directory is group-shared (see README setup). */
+const TOPIC_FILE_MODE = 0o664;
 
 /** Write temp file + rename in the same directory, so a crash can never
  *  leave a half-written topic file. */
 export async function atomicWriteFile(path: string, content: string): Promise<void> {
   const tmp = `${path}.${crypto.randomUUID()}.tmp`;
   await Bun.write(tmp, content);
+  // chmod before the rename: the file is never visible at the final path
+  // with the wrong mode.
+  await chmod(tmp, TOPIC_FILE_MODE);
   await rename(tmp, path);
 }
 
