@@ -1,0 +1,92 @@
+name: app-daybook
+
+services:
+  app:
+    build: .
+    container_name: daybook-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-7777}:${APP_PORT:-7777}"
+    environment:
+      APP_PORT: ${APP_PORT:-7777}
+      APP_PASSWORD: ${APP_PASSWORD:?required}
+      SESSION_SECRET: ${SESSION_SECRET:?required}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      TLS_ENABLED: ${TLS_ENABLED:-false}
+      TLS_CERT_PATH: ${TLS_CERT_PATH:-}
+      TLS_KEY_PATH: ${TLS_KEY_PATH:-}
+      TOPICS_DIR: /data/topics
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-daybook}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      TZ: ${TZ:-Europe/Madrid}
+    volumes:
+      - ./data/topics:/data/topics:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # $$ so the shell inside the container expands APP_PORT, not compose.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${APP_PORT:-7777}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - daybook-network
+
+  postgres:
+    image: postgres:18.4-alpine3.24
+    container_name: daybook-postgres
+    restart: unless-stopped
+    # No host port: reachable only inside daybook-network.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-daybook}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      # postgres:18 images moved the default PGDATA; pin it back so the
+      # spec's mount path below is the real data directory.
+      PGDATA: /var/lib/postgresql/data
+      TZ: ${TZ:-Europe/Madrid}
+    volumes:
+      - ${POSTGRES_DATA_DIR:?required — absolute host path, no ~}:/var/lib/postgresql/data:rw
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-daybook}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - daybook-network
+
+  pgadmin:
+    image: dpage/pgadmin4:9.16
+    container_name: daybook-pgadmin
+    profiles: ["debug"]
+    restart: unless-stopped
+    ports:
+      # pgadmin listens on 8080 (not 80): with no-new-privileges it detects a
+      # restricted security context and skips the root→port-80 setup.
+      - "7778:8080"
+    environment:
+      # Defaults keep normal `up` working; pgadmin itself refuses to start
+      # with empty credentials, so the debug profile still requires them.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - daybook-network
+
+networks:
+  daybook-network:
+    name: daybook-network
+    driver: bridge

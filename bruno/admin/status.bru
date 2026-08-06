@@ -1,0 +1,15 @@
+meta {
+  name: Admin status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/admin/status
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

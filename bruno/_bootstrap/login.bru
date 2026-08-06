@@ -1,0 +1,21 @@
+meta {
+  name: Login (session bootstrap — runs first so the whole collection is authenticated; the canonical auth requests live in auth/, which runs last so logout ends the run)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "password": "{{appPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

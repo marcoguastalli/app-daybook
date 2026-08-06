@@ -1,0 +1,15 @@
+meta {
+  name: Reindex
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/admin/reindex
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
