@@ -1,0 +1,15 @@
+meta {
+  name: Get day
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/days/2026-08-06
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

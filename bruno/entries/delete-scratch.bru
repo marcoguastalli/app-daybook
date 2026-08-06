@@ -1,0 +1,15 @@
+meta {
+  name: Delete scratch entry
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/topics/bruno-scratch/entries/2026-08-06/{{scratchTime}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

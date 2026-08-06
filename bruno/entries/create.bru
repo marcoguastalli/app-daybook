@@ -1,0 +1,23 @@
+meta {
+  name: Create entry
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/entries
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "topicTitle": "Bruno Topic",
+    "date": "2026-08-06",
+    "content": "hello from bruno, see [[Bruno Linked]]"
+  }
+}
+
+assert {
+  res.status: eq 201
+}

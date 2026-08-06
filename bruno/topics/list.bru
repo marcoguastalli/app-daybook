@@ -1,0 +1,15 @@
+meta {
+  name: List topics
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/topics
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

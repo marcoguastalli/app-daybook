@@ -1,0 +1,10 @@
+.claude
+node_modules/
+dist/
+data/
+.env
+.env.test
+.DS_Store
+*.log
+test-results/
+playwright-report/

@@ -1,0 +1,27 @@
+meta {
+  name: Create scratch entry (for update/delete below)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/entries
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "topicTitle": "Bruno Scratch",
+    "date": "2026-08-06",
+    "content": "scratch entry, will be edited then deleted"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  bru.setVar("scratchTime", res.getBody().time);
+}

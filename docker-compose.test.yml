@@ -1,0 +1,30 @@
+# Standalone ephemeral Postgres for integration tests, run from the host
+# (IDE, `bun test:integration`, CI). Completely independent from the
+# app/postgres services in docker-compose.yml: different stack name,
+# container name and network, and tmpfs storage so every start is a fresh
+# DB — it never shares data or a volume with the real dev/prod stack, and
+# it never gets a host port on the production compose file (that one stays
+# unreachable from outside daybook-network by design).
+name: app-daybook-test
+
+services:
+  postgres-test:
+    image: postgres:18.4-alpine3.24
+    container_name: daybook-postgres-test
+    environment:
+      POSTGRES_DB: daybook_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      # postgres:18 images moved the default PGDATA; pin it back so the
+      # tmpfs mount below is the real data directory (same fix as the
+      # production postgres service in docker-compose.yml).
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d daybook_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
