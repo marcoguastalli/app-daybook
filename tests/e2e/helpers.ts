@@ -1,4 +1,4 @@
-import { appendFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
 
@@ -39,7 +39,15 @@ export function todayISO(): string {
  * once, so this delay is purely about making the test deterministic here.
  */
 export async function externalEdit(file: string, append: string): Promise<void> {
-  await appendFile(join(TOPICS_DIR, file), append);
+  // Appends through a separate process inside the container rather than from
+  // the host. Both are "external" as far as the app is concerned — the point
+  // is that something other than the app changed the file — but this way the
+  // write runs as the same user that owns app-created topic files, so the
+  // test does not depend on host/container uid alignment (a host append fails
+  // with EACCES on Linux CI, where bind mounts pass ownership through).
+  execFileSync("docker", ["exec", "-i", "daybook-app", "sh", "-c", `cat >> /data/topics/${file}`], {
+    input: append,
+  });
   await new Promise((r) => setTimeout(r, 1500));
 }
 
