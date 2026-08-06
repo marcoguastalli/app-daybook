@@ -80,12 +80,15 @@ jobs:
           TZ=Europe/Madrid
           EOF
           mkdir -p /tmp/daybook-pgdata data/topics
-          # The app container runs non-root as bun (uid 1000) with a
-          # read-only filesystem, so the bind-mounted topics directory is
-          # its only writable path — it must be owned by that uid. Linux
-          # bind mounts pass host ownership straight through; macOS Docker
-          # Desktop virtualizes it away, which is why this is CI-only.
-          sudo chown -R 1000:1000 data/topics
+          # Two writers share this directory: the app container (non-root
+          # bun, uid/gid 1000, read-only fs everywhere else) and the E2E
+          # tests, which edit files directly to simulate vim on the server.
+          # Linux bind mounts pass host ownership straight through, so give
+          # the runner ownership and bun's gid group-write — the same
+          # arrangement the README documents for a real deployment. macOS
+          # Docker Desktop virtualizes ownership, hence this is Linux-only.
+          sudo chown -R "$(id -u)":1000 data/topics
+          chmod -R g+w data/topics
 
       - name: Start the stack
         run: docker compose up -d --build

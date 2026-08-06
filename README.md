@@ -11,16 +11,18 @@ rebuildable from them.
 ```bash
 cp .env.example .env   # then set APP_PASSWORD, SESSION_SECRET, POSTGRES_PASSWORD, POSTGRES_DATA_DIR
 mkdir -p data/topics
-sudo chown -R 1000:1000 data/topics   # Linux only — see below
+sudo chown -R "$(id -u)":1000 data/topics && chmod -R g+w data/topics  # Linux only
 docker compose up --build
 ```
 
-**On Linux, the topics directory must be owned by uid 1000.** The app
-container runs non-root as `bun` (uid 1000) with a read-only filesystem, so
-the bind-mounted `data/topics` is its only writable path, and Linux bind
-mounts pass host ownership straight through. Without the `chown`, saving an
-entry fails with a permission error. macOS Docker Desktop virtualizes
-ownership, so the step is unnecessary (and harmless) there.
+**On Linux, `data/topics` needs shared ownership.** Two parties write there:
+the app container, which runs non-root as `bun` (uid/gid 1000) with a
+read-only filesystem everywhere else, and you, editing topic files directly
+with vim. Linux bind mounts pass host ownership straight through, so the
+command above keeps the files yours while granting the container's group
+write access — without it, either saving from the app or editing by hand
+fails with a permission error. macOS Docker Desktop virtualizes ownership,
+so the step is unnecessary (and harmless) there.
 
 The app listens on `http://localhost:7777`.
 
