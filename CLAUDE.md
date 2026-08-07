@@ -62,6 +62,7 @@ bun run test:integration            # integration tests — needs the ephemeral 
 bunx tsc --noEmit                   # strict type-check, whole project
 docker compose up --build           # full stack (app + postgres)
 docker compose --profile debug up   # additionally starts pgadmin on 7778 (host port 8080-mapped, see docker-compose.yml comment)
+docker compose -f docker-compose.yml -f docker-compose.shared-db.yml up app --no-deps  # use the shared Postgres in my_docker/postgres/src/v1 instead (see README "Shared Postgres mode")
 ```
 
 Integration tests run against a **separate, ephemeral** Postgres (`docker-compose.test.yml`, tmpfs storage, its own stack/container/network names) — never the dev/prod one, which intentionally has no host port:

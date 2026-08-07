@@ -1,0 +1,23 @@
+# Opt-in override: point the app at the shared Postgres instance in
+# my_docker/postgres/src/v1 instead of this repo's own postgres service.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.shared-db.yml up app --no-deps
+# --no-deps is required — otherwise Compose still starts this repo's own
+# postgres from docker-compose.yml via depends_on.
+#
+# One-time setup: create this app's database on the shared instance first
+# (see README "Shared Postgres mode").
+services:
+  app:
+    environment:
+      POSTGRES_HOST: ${SHARED_POSTGRES_HOST:-postgres-shared}
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${SHARED_POSTGRES_DB:-daybook}
+      POSTGRES_USER: ${SHARED_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${SHARED_POSTGRES_PASSWORD:-admin123four}
+    networks:
+      - shared-postgres-net
+
+networks:
+  shared-postgres-net:
+    external: true

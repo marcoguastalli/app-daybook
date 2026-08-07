@@ -26,6 +26,14 @@ so the step is unnecessary (and harmless) there.
 
 The app listens on `http://localhost:7777`.
 
+**Ports:** only `7777` (app) is published by default, bound to `0.0.0.0` —
+reachable from your LAN/Tailscale as soon as your host firewall allows
+incoming connections to Docker, nothing else to configure. `postgres` has no
+host port at all. `7778` (pgadmin) only opens with `--profile debug` below —
+don't forward it (or `5432`/`5050` from a shared instance, see "Shared
+Postgres mode") beyond your LAN; they give raw DB/admin access with whatever
+dev password is in `.env`.
+
 pgadmin is optional and off by default: it is declared under the `debug`
 compose profile, so a plain `docker compose up` never starts it. To opt in
 for a debugging session:
@@ -38,6 +46,28 @@ docker compose --profile debug down   # stop everything including pgadmin
 Log in with `PGADMIN_DEFAULT_EMAIL` / `PGADMIN_DEFAULT_PASSWORD` from `.env`,
 then connect to host `postgres` (the DB is only reachable inside the Docker
 network — it exposes no host port).
+
+### Shared Postgres mode
+
+Instead of this repo's own postgres, you can point the app at a single
+Postgres/pgAdmin instance shared across multiple projects on the same
+machine — see `my_docker/postgres/src/v1`. One-time setup: create this app's
+database on the shared instance (it runs migrations itself on startup, so an
+empty database is enough):
+
+```bash
+docker exec -it postgres psql -U postgres -c "CREATE DATABASE daybook;"
+```
+
+Then, instead of `docker compose up`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.shared-db.yml up app --no-deps
+```
+
+`--no-deps` is required — otherwise Compose still starts this repo's own
+`postgres`. Set `SHARED_POSTGRES_*` in `.env` if your shared instance's
+credentials or database name differ from the defaults (see `.env.example`).
 
 ## Development
 
