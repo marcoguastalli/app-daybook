@@ -69,6 +69,16 @@ docker compose -f docker-compose.yml -f docker-compose.shared-db.yml up app --no
 `postgres`. Set `SHARED_POSTGRES_*` in `.env` if your shared instance's
 credentials or database name differ from the defaults (see `.env.example`).
 
+**Footgun:** a plain `docker compose up` (without the `-f` stacking above)
+silently falls back to this repo's own `postgres` service, pointed at
+`POSTGRES_DATA_DIR` from `.env` — a *different* database than the shared one.
+The app will start fine either way, so nothing errors; entries just won't
+show up because they're indexed in whichever Postgres you happened to boot.
+If the two ever diverge, `data/topics/*.md` is still the real source of
+truth (see "Backup" below) — switch to the intended Postgres backend and
+click **Reindex** in `/admin` to rebuild its index from the files, rather
+than trying to reconcile the two databases by hand.
+
 ## Development
 
 ```bash
